@@ -1,167 +1,79 @@
-# @traffic-orchestrator/python-sdk
+# Traffic Orchestrator — Python SDK
 
-Official Python SDK for [Traffic Orchestrator](https://trafficorchestrator.com) â€” license validation, management, and analytics.
+[![PyPI](https://img.shields.io/pypi/v/traffic-orchestrator?color=3775A9&label=PyPI)](https://pypi.org/project/traffic-orchestrator/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 
-ðŸ“– [API Reference](https://trafficorchestrator.com/docs#api) Â· [SDK Guides](https://trafficorchestrator.com/docs/sdk/python) Â· [OpenAPI Spec](https://api.trafficorchestrator.com/api/v1/openapi.json)
+**Enterprise-grade software licensing, edge validation, and API management.** Protect and monetize your applications with domain-bound license keys, offline verification, and real-time analytics — powered by 300+ edge locations worldwide.
 
-## Install
+---
+
+## Quickstart (3 steps, 60 seconds)
+
+### 1. Create your free account
+
+> **[Sign up at trafficorchestrator.com](https://trafficorchestrator.com/register)** — no credit card required. Free tier includes 5 licenses and 10,000 validations/month.
+
+### 2. Get your API key
+
+> Go to **[Dashboard ? API Keys](https://trafficorchestrator.com/dashboard/keys)** and generate a Sandbox or Live key.
+
+### 3. Install and validate
 
 ```bash
 pip install traffic-orchestrator
 ```
 
-## Quick Start
-
 ```python
 from traffic_orchestrator import TrafficOrchestrator
 
-# Validate a license
-to = TrafficOrchestrator()
-result = to.validate_license("LK-xxxx-xxxx-xxxx", domain="example.com")
-
-if result.valid:
-    print(f"License active, plan: {result.plan_id}")
+to = TrafficOrchestrator(api_key='sk_live_your_key_here')
+result = to.validate_license('LK-xxxx-xxxx-xxxx', domain='yourdomain.com')
+print('License active' if result['valid'] else 'License invalid')
 ```
 
-## Authenticated Usage
+**That's it.** Your application is now license-protected.
 
-```python
-to = TrafficOrchestrator(api_key=os.environ["TO_API_KEY"])
+---
 
-# List licenses
-licenses = to.list_licenses()
+## Why Traffic Orchestrator?
 
-# Get usage
-usage = to.get_usage()
-print(f"{usage.validations_month} / {usage.monthly_limit}")
-```
+| Feature | Description |
+|---------|-------------|
+| **Domain-Bound Licensing** | SHA-256 validated keys tied to specific domains — no key sharing |
+| **Edge Validation** | Sub-10ms license checks from 300+ global edge locations |
+| **Offline Mode** | Ed25519 signed JWT tokens for air-gapped and offline environments |
+| **Grace Period** | Configurable fallback keeps your app running during API outages |
+| **Real-Time Analytics** | Track activations, usage patterns, and revenue in your dashboard |
+| **Multi-Language** | Official SDKs for 12 languages — same API, consistent behavior |
 
-## API Methods
+## Features
 
-### Core License Operations
+- **License Validation** — Validate license keys against domains with cryptographic proof
+- **License Management** — Create, update, suspend, revoke, and rotate license keys
+- **Offline Verification** — Verify Ed25519-signed JWT tokens without an API call
+- **Webhooks** — Real-time notifications for license events (activation, expiry, revocation)
+- **Analytics & SLA Monitoring** — Track validation performance and uptime metrics
 
-| Method | Auth | Description |
-| --- | --- | --- |
-| `validate_license(token, domain?)` | No | Validate a license key |
-| `verify_offline(token, public_key, domain?)` | No | Ed25519 offline verification (static) |
-| `clear_cache()` | No | Clear grace period validation cache |
-| `list_licenses()` | Yes | List all licenses |
-| `create_license(options)` | Yes | Create a new license |
-| `rotate_license(license_id)` | Yes | Rotate license key |
-| `delete_license(license_id)` | Yes | Revoke a license |
-| `get_usage()` | Yes | Get usage statistics |
-| `get_analytics(days?)` | Yes | Get detailed analytics |
-| `health_check()` | No | Check API health |
+## Documentation
 
-### Portal & Enterprise Methods
+- ?? **[Full API Reference](https://trafficorchestrator.com/docs/api)**
+- ?? **[Quickstart Guides](https://trafficorchestrator.com/docs/quickstart)**
+- ?? **[Integration Examples](https://trafficorchestrator.com/docs/examples)**
 
-| Method | Auth | Description |
-| --- | --- | --- |
-| `add_domain(license_id, domain)` | Yes | Add domain to license |
-| `remove_domain(license_id, domain)` | Yes | Remove domain from license |
-| `get_domains(license_id)` | Yes | Get license domains |
-| `update_license_status(id, status)` | Yes | Suspend/reactivate license |
-| `list_api_keys()` | Yes | List API keys |
-| `create_api_key(name, scopes?)` | Yes | Create API key |
-| `delete_api_key(key_id)` | Yes | Delete API key |
-| `get_dashboard()` | Yes | Full dashboard overview |
+## Support
 
-## Error Handling
-
-```python
-from traffic_orchestrator import TOError, TOValidationError
-
-try:
-    result = to.validate_license("invalid-token")
-except TOValidationError as e:
-    print(f"Validation failed: {e.code} â€” {e.message}")
-except TOError as e:
-    print(f"API error: {e.status} {e.message}")
-```
-
-## Retry & Resilience
-
-Built-in retry with exponential backoff:
-
-```python
-to = TrafficOrchestrator(
-    api_key="...",
-    timeout=5.0,     # seconds
-    max_retries=3,   # retry on 5xx and network errors
-)
-```
-
-## Grace Period (v2.1.0+)
-
-Keep your application running during API outages with grace period caching. When enabled, the last successful validation result is cached in-memory and returned if the API becomes unreachable:
-
-```python
-to = TrafficOrchestrator(
-    grace_period=True,       # Enable grace period caching
-    grace_period_ttl=86400   # 24 hours in seconds (default)
-)
-
-result = to.validate_license("LK-xxxx", domain="example.com")
-
-if result["valid"]:
-    if result.get("from_cache"):
-        print("Warning: using cached validation (API unreachable)")
-    # Application continues working regardless
-
-# Manually clear the cache if needed
-to.clear_cache()
-```
-
-**How it works:**
-- Successful validations are cached per `token:domain` key
-- On network failure, cached results are returned with `from_cache: True`
-- 4xx errors (invalid license, domain mismatch) are never cached
-- Cache is in-memory only â€” resets on process restart
-
-## Multi-Environment
-
-```python
-# Production (default)
-to = TrafficOrchestrator(api_key=os.environ["TO_API_KEY"])
-
-# Staging
-to = TrafficOrchestrator(
-    api_key=os.environ["TO_API_KEY_DEV"],
-    api_url="https://api-staging.trafficorchestrator.com/api/v1"
-)
-```
-
-## Offline Verification (Enterprise)
-
-Enterprise licenses are signed JWTs verified without network access using Ed25519:
-
-```python
-public_key = open("public_key.pem").read()
-result = TrafficOrchestrator.verify_offline(
-    token=license_token,
-    public_key_pem=public_key,
-    domain="example.com"  # Optional domain check
-)
-
-if result.valid:
-    print(f"Plan: {result.plan_id}")
-    print(f"Domains: {result.domains}")
-    print(f"Expires: {result.expires_at}")
-```
-
-## Type Hints
-
-Full PEP 484 type hints for all methods and return types:
-
-```python
-from traffic_orchestrator.types import ValidationResult, License, UsageStats
-```
-
-## Requirements
-
-- Python 3.8+
-- `requests` or `httpx`
+- ?? [Report an Issue](https://github.com/TrafficOrchestrator/python-sdk/issues)
+- ?? [Email Support](mailto:support@trafficorchestrator.com)
+- ?? [Knowledge Base](https://trafficorchestrator.com/docs)
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  <a href="https://trafficorchestrator.com"><strong>trafficorchestrator.com</strong></a> · 
+  <a href="https://trafficorchestrator.com/register">Get Started Free</a> · 
+  <a href="https://trafficorchestrator.com/docs">Docs</a>
+</p>

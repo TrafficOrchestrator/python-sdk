@@ -162,6 +162,7 @@ class TrafficOrchestrator:
 
     def list_licenses(self) -> List[Dict[str, Any]]:
         """List all licenses for the authenticated user."""
+        self._require_api_key('list_licenses')
         data = self._request("GET", "/portal/licenses")
         return data.get("licenses", [])
 
@@ -213,14 +214,17 @@ class TrafficOrchestrator:
 
     def list_api_keys(self) -> Dict[str, Any]:
         """List all API keys for the authenticated user."""
+        self._require_api_key('list_api_keys')
         return self._request("GET", "/api-keys")
 
     def create_api_key(self, name: str, scopes: Optional[List[str]] = None) -> Dict[str, Any]:
         """Create a new API key."""
+        self._require_api_key('create_api_key')
         return self._request("POST", "/api-keys", json={"name": name, "scopes": scopes or ["read"]})
 
     def delete_api_key(self, key_id: str) -> Dict[str, Any]:
         """Delete an API key."""
+        self._require_api_key('delete_api_key')
         return self._request("DELETE", f"/api-keys/{key_id}")
 
     # ── Webhooks ─────────────────────────────────────────────────────────────
@@ -237,6 +241,7 @@ class TrafficOrchestrator:
 
     def get_analytics(self, days: int = 30) -> Dict[str, Any]:
         """Get detailed analytics for a specified number of days."""
+        self._require_api_key('get_analytics')
         return self._request("GET", f"/portal/analytics?days={days}")
 
     def get_usage(self) -> Dict[str, Any]:
@@ -255,6 +260,7 @@ class TrafficOrchestrator:
         Args:
             days: Number of days to look back (max 90)
         """
+        self._require_api_key('get_sla')
         return self._request("GET", f"/portal/sla?days={days}")
 
     # ── Audit & Export ───────────────────────────────────────────────────────
